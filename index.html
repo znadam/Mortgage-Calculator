@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="房贷测算器">
+  <meta name="theme-color" content="#f5f5f7">
+  <title>房贷组合贷与提前还款实时模拟器</title>
+  <style>
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-card: #ffffff;
+      --bg-card-sub: #fbfbfd;
+      --text-main: #1d1d1f;
+      --text-muted: #86868b;
+      --accent: #0071e3;
+      --accent-gradient: linear-gradient(135deg, #0071e3 0%, #42a5f5 100%);
+      --success: #34c759;
+      --warning: #ff9500;
+      --purple: #af52de;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #000000;
+        --bg-card: #1c1c1e;
+        --bg-card-sub: #2c2c2e;
+        --text-main: #f5f5f7;
+        --text-muted: #86868b;
+        --border-color: rgba(255, 255, 255, 0.12);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px;
+    }
+    .header-title h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .header-title p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .header-badge {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--success);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title span.tag {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+      background: rgba(0, 113, 227, 0.08);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrapper input {
+      width: 100%;
+      height: 40px;
+      background: var(--bg-card-sub);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0 12px;
+      font-size: 14px;
+      color: var(--text-main);
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-wrapper input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+      background: var(--bg-card);
+    }
+    .input-suffix {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .segmented-control {
+      display: flex;
+      background: var(--bg-card-sub);
+      padding: 3px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      gap: 2px;
+    }
+    .segment-btn {
+      flex: 1;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .segment-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      font-weight: 600;
+    }
+
+    .range-box {
+      margin-top: 8px;
+    }
+    .range-box input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .pill-btn {
+      background: var(--bg-card-sub);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 11px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .pill-btn:hover {
+      background: rgba(0, 113, 227, 0.1);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Hero Banner */
+    .hero-stat-card {
+      background: var(--accent-gradient);
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0, 113, 227, 0.25);
+    }
+    .hero-title {
+      font-size: 13px;
+      opacity: 0.9;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hero-val {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin: 6px 0;
+    }
+    .hero-sub {
+      font-size: 13px;
+      opacity: 0.88;
+      line-height: 1.5;
+    }
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding-top: 14px;
+      margin-top: 16px;
+    }
+    .metric-item .m-lbl {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .metric-item .m-val {
+      font-size: 17px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Explanation Banner: 等额本息 vs 等额本金 */
+    .method-diff-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .diff-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .diff-item {
+      background: var(--bg-card-sub);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .diff-item.active-method {
+      border-color: var(--accent);
+      background: rgba(0, 113, 227, 0.04);
+    }
+    .diff-item h5 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .diff-item p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Compare Grid */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .compare-card {
+      background: var(--bg-card-sub);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      transition: all 0.2s;
+    }
+    .compare-card.highlight {
+      border-color: var(--accent);
+      background: rgba(0, 113, 227, 0.03);
+      box-shadow: 0 4px 12px rgba(0, 113, 227, 0.08);
+    }
+    .compare-card h4 {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .compare-val {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .compare-detail {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* Live Breakdown Table */
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .breakdown-table th {
+      text-align: left;
+      padding: 8px 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .breakdown-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 500;
+    }
+    .breakdown-table tr:last-child td {
+      border-bottom: none;
+      font-weight: 700;
+    }
+
+    .tips-box {
+      background: rgba(52, 199, 89, 0.1);
+      border: 1px solid rgba(52, 199, 89, 0.2);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-title">
+      <h1>房贷与提前还款实时模拟器</h1>
+      <p>已精准校准 2026年10月 实际扣款单数据（精确到分）</p>
+    </div>
+    <div class="header-badge">
+      <span>✓</span> 扣款明细已 100% 匹配
+    </div>
+  </header>
+
+  <!-- Difference between Equal Interest & Principal -->
+  <div class="method-diff-banner">
+    <div class="diff-title">
+      <span>⚖️ 等额本息 与 等额本金 的本质区别 (您的实际账单属于【等额本息】)</span>
+    </div>
+    <div class="diff-grid">
+      <div class="diff-item active-method" id="diffItemInterest">
+        <h5>
+          <span>① 等额本息 (您当前的扣款方式)</span>
+          <span style="color:var(--accent); font-size:11px; font-weight:600;">当前选择</span>
+        </h5>
+        <p>• <strong>月供固定</strong>：每月总还款金额完全相同（商贷 11,596.76 元，公积金 4,876.41 元）。</p>
+        <p>• <strong>还款结构</strong>：前期利息占比高、本金占比低；随着本金逐步偿还，每月利息递减、本金递增。</p>
+      </div>
+      <div class="diff-item" id="diffItemPrincipal">
+        <h5>
+          <span>② 等额本金</span>
+          <span style="color:var(--purple); font-size:11px; font-weight:600;">递减模式</span>
+        </h5>
+        <p>• <strong>本金固定，月供逐月递减</strong>：每月归还固定本金（如商贷每月还 9,170 元本金），利息按剩余本金算。</p>
+        <p>• <strong>前期还款压力大</strong>：若选等额本金，当前商贷首月需还 13,657 元（比现在多2,060元），但总利息更少。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-layout">
+    <!-- Left Column: Inputs -->
+    <div class="left-col" style="display:flex; flex-direction:column; gap:16px;">
+      <!-- Loan Details Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>贷款基础数据 (来自真实扣款单)</span>
+          <span class="tag">组合贷</span>
+        </div>
+
+        <!-- 还款方式选择 -->
+        <div class="form-group">
+          <div class="form-label">
+            <span>计算还款方式</span>
+            <span id="repayModeNote" style="color:var(--accent); font-weight:600;">真实方式：等额本息</span>
+          </div>
+          <div class="segmented-control" id="repayTypeSegment">
+            <button class="segment-btn active" data-type="equal_interest">等额本息 (实际账单)</button>
+            <button class="segment-btn" data-type="equal_principal">等额本金 (测算对比)</button>
+          </div>
+        </div>
+
+        <!-- 商业贷款 -->
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">商贷剩余本金</div>
+            <div class="input-wrapper">
+              <input type="number" id="bizBalance" value="1724027.09" step="1000">
+              <span class="input-suffix">元</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">商贷剩余期数</div>
+            <div class="input-wrapper">
+              <input type="number" id="bizRemainMonths" value="188" step="1">
+              <span class="input-suffix">期 (至2042年)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">商贷年利率</div>
+            <div class="input-wrapper">
+              <input type="number" id="bizRate" value="3.11" step="0.01">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">商贷当前月供</div>
+            <div class="input-wrapper">
+              <input type="text" id="bizDisplayPmt" value="11,596.76" readonly style="background:transparent;">
+              <span class="input-suffix">元/月</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 公积金贷款 -->
+        <div class="form-row" style="margin-top:6px; border-top:1px dashed var(--border-color); padding-top:12px;">
+          <div class="form-group">
+            <div class="form-label">公积金剩余本金</div>
+            <div class="input-wrapper">
+              <input type="number" id="fundBalance" value="976853.09" step="1000">
+              <span class="input-suffix">元</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">公积金剩余期数</div>
+            <div class="input-wrapper">
+              <input type="number" id="fundRemainMonths" value="263" step="1">
+              <span class="input-suffix">期 (至2048年)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">公积金利率</div>
+            <div class="input-wrapper">
+              <input type="number" id="fundRate" value="2.60" step="0.01">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">公积金当前月供</div>
+            <div class="input-wrapper">
+              <input type="text" id="fundDisplayPmt" value="4,876.41" readonly style="background:transparent;">
+              <span class="input-suffix">元/月</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 双边公积金月缴存 -->
+        <div class="form-group" style="margin-bottom:0; margin-top:8px;">
+          <div class="form-label">
+            <span>双边公积金每月缴存额 (用于测算个人实付)</span>
+            <span style="color:var(--text-muted);">自动对冲还贷</span>
+          </div>
+          <div class="input-wrapper">
+            <input type="number" id="fundMonthlyPay" value="10000" step="500">
+            <span class="input-suffix">元/月</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prepayment Settings Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>提前还款规划配置</span>
+          <span class="tag">策略试算</span>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">
+            <span>拟提前还款金额</span>
+            <span id="prepayAmountText" style="color:var(--accent); font-weight:700;">200,000 元 (20万)</span>
+          </div>
+          <div class="input-wrapper">
+            <input type="number" id="prepayAmount" value="200000" step="10000" min="0">
+            <span class="input-suffix">元</span>
+          </div>
+          <div class="range-box">
+            <input type="range" id="prepayRange" min="0" max="1724027" step="10000" value="200000">
+          </div>
+          <div class="pills">
+            <button class="pill-btn" onclick="setPrepay(100000)">10万</button>
+            <button class="pill-btn" onclick="setPrepay(200000)">20万</button>
+            <button class="pill-btn" onclick="setPrepay(300000)">30万</button>
+            <button class="pill-btn" onclick="setPrepay(500000)">50万</button>
+            <button class="pill-btn" onclick="setPrepay(800000)">80万</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">优先抵扣贷款</div>
+          <div class="segmented-control" id="targetSegment">
+            <button class="segment-btn active" data-target="biz">优先冲商贷 (3.11%，省利息最多)</button>
+            <button class="segment-btn" data-target="fund">冲公积金 (2.60%)</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <div class="form-label">还款方式策略</div>
+          <div class="segmented-control" id="modeSegment">
+            <button class="segment-btn active" data-mode="reduce_term">方案A：缩短年限 (月供不变，省利息倍增)</button>
+            <button class="segment-btn" data-mode="reduce_pmt">方案B：减少月供 (期限不变，降月供)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Comparisons -->
+    <div class="right-col" style="display:flex; flex-direction:column; gap:16px;">
+      <!-- Hero Stat Card -->
+      <div class="hero-stat-card">
+        <div class="hero-title">
+          <span>当前选择方案节省利息</span>
+          <span style="font-size:12px; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:10px;" id="heroModeBadge">方案A：缩短年限</span>
+        </div>
+        <div class="hero-val" id="heroSavedInterest">¥ 114,352</div>
+        <div class="hero-sub" id="heroSummaryText">
+          商业贷款还款年限缩短 27 个月 (2.2年)，提前至 2040年3月 结清商贷！
+        </div>
+        <div class="hero-metrics">
+          <div class="metric-item">
+            <div class="m-lbl">新总月供 (账面)</div>
+            <div class="m-val" id="heroNewPmt">¥ 16,473 /月</div>
+          </div>
+          <div class="metric-item">
+            <div class="m-lbl">自付月供 (扣1万公积金)</div>
+            <div class="m-val" id="heroRealOutPmt">¥ 6,473 /月</div>
+          </div>
+          <div class="metric-item">
+            <div class="m-lbl">当前利息节省比率</div>
+            <div class="m-val" id="heroSavingRate">15.4%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare Grid -->
+      <div class="compare-grid">
+        <div class="compare-card highlight" id="cardOptA">
+          <h4>方案 A：缩短年限 (推荐，月供保持原样)</h4>
+          <div class="compare-val" id="valTermSaved" style="color:var(--accent);">省利息 ¥ 11.44 万</div>
+          <div class="compare-detail" id="detailTerm">
+            • 账面总月供：保持原样约 ¥ 16,473/月<br>
+            • 提前结清：商贷缩短 27 个月 (2.2年)<br>
+            • 结清节点：从 2042年6月 提前至 <strong>2040年3月</strong>
+          </div>
+        </div>
+
+        <div class="compare-card" id="cardOptB">
+          <h4>方案 B：减少月供 (还款年限不改变)</h4>
+          <div class="compare-val" id="valPmtSaved" style="color:var(--success);">省利息 ¥ 5.29 万</div>
+          <div class="compare-detail" id="detailPmt">
+            • 账面总月供：从 16,473 降至 <strong>15,128</strong> 元/月<br>
+            • 每月直减：少掏现金 <strong>1,345</strong> 元/月<br>
+            • 扣除公积金后实付：仅需 <strong>5,128</strong> 元/月
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Bill Comparison Table -->
+      <div class="card">
+        <div class="card-title">
+          <span>真实扣款单 vs 提前还款后 对比明细表</span>
+          <span class="tag" id="interestDiffTag">方案A 比 方案B 多省 6.15 万元利息</span>
+        </div>
+
+        <table class="breakdown-table">
+          <thead>
+            <tr>
+              <th>还款项目</th>
+              <th>当前账单 (2026年10月)</th>
+              <th id="thNewBiz">提前还款后 (商贷)</th>
+              <th>变化幅度</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>商贷本金余额</td>
+              <td>¥ 1,724,027.09</td>
+              <td id="tdNewBizBal">¥ 1,524,027.09</td>
+              <td style="color:var(--accent); font-weight:600;" id="tdPrepayCut">- ¥ 200,000</td>
+            </tr>
+            <tr>
+              <td>商业贷款月供</td>
+              <td>¥ 11,596.76</td>
+              <td id="tdNewBizPmt">¥ 11,596.76</td>
+              <td id="tdBizPmtDiff">- ¥ 0 /月</td>
+            </tr>
+            <tr>
+              <td>公积金贷款月供</td>
+              <td>¥ 4,876.41</td>
+              <td>¥ 4,876.41</td>
+              <td>保持不变</td>
+            </tr>
+            <tr>
+              <td>合计账面月供</td>
+              <td>¥ 16,473.17</td>
+              <td id="tdNewTotalPmt">¥ 16,473.17</td>
+              <td id="tdTotalPmtDiff">保持不变</td>
+            </tr>
+            <tr>
+              <td>扣除公积金(1万)后实付</td>
+              <td>¥ 6,473.17</td>
+              <td id="tdNewRealOut">¥ 6,473.17</td>
+              <td id="tdRealOutDiff">保持不变</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tips Box -->
+      <div class="tips-box">
+        <div class="tips-icon">💡</div>
+        <div class="tips-content" id="smartAdvice">
+          <strong>校准结论：</strong>您当前每月实际扣款 <strong>16,473.17 元</strong>（商贷 11,596.76 + 公积金 4,876.41）。商贷按360月原合同已还至剩余 188 期（2042年结清），公积金剩余 263 期（2048年结清）。无论任何情况，<strong>提前还款 100% 冲还商贷</strong> 都是唯一的最佳选择！
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const bizBalanceInput = document.getElementById('bizBalance');
+  const fundBalanceInput = document.getElementById('fundBalance');
+  const bizRemainMonthsInput = document.getElementById('bizRemainMonths');
+  const fundRemainMonthsInput = document.getElementById('fundRemainMonths');
+  const bizRateInput = document.getElementById('bizRate');
+  const fundRateInput = document.getElementById('fundRate');
+  const fundMonthlyPayInput = document.getElementById('fundMonthlyPay');
+  const prepayAmountInput = document.getElementById('prepayAmount');
+  const prepayRangeInput = document.getElementById('prepayRange');
+
+  let currentRepayType = 'equal_interest';
+  let currentTarget = 'biz';
+  let currentMode = 'reduce_term';
+
+  function fmt(num) {
+    return new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  }
+  function fmtWan(num) {
+    return (num / 10000).toFixed(2);
+  }
+
+  function setupSegments(containerId, callback) {
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('.segment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        callback(btn);
+      });
+    });
+  }
+
+  setupSegments('repayTypeSegment', (btn) => {
+    currentRepayType = btn.dataset.type;
+    const isInterest = currentRepayType === 'equal_interest';
+    document.getElementById('repayModeNote').innerText = isInterest ? '真实方式：等额本息 (每月固定)' : '模拟对比：等额本金 (逐月递减)';
+    document.getElementById('diffItemInterest').classList.toggle('active-method', isInterest);
+    document.getElementById('diffItemPrincipal').classList.toggle('active-method', !isInterest);
+    recalculate();
+  });
+
+  setupSegments('targetSegment', (btn) => {
+    currentTarget = btn.dataset.target;
+    recalculate();
+  });
+
+  setupSegments('modeSegment', (btn) => {
+    currentMode = btn.dataset.mode;
+    recalculate();
+  });
+
+  window.setPrepay = function(val) {
+    prepayAmountInput.value = val;
+    prepayRangeInput.value = val;
+    recalculate();
+  };
+
+  prepayAmountInput.addEventListener('input', () => {
+    prepayRangeInput.value = prepayAmountInput.value;
+    recalculate();
+  });
+  prepayRangeInput.addEventListener('input', () => {
+    prepayAmountInput.value = prepayRangeInput.value;
+    recalculate();
+  });
+
+  [bizBalanceInput, fundBalanceInput, bizRemainMonthsInput, fundRemainMonthsInput, bizRateInput, fundRateInput, fundMonthlyPayInput].forEach(inp => {
+    inp.addEventListener('input', recalculate);
+  });
+
+  // Equal Interest (等额本息)
+  function calcEqualInterest(p, r, n) {
+    if (p <= 0 || n <= 0) return { pmt: 0, totalInterest: 0, firstInterest: 0, firstPrincipal: 0 };
+    const pmt = p * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+    const totalInterest = pmt * n - p;
+    const firstInterest = p * r;
+    const firstPrincipal = pmt - firstInterest;
+    return { pmt, totalInterest, firstInterest, firstPrincipal };
+  }
+
+  // Equal Principal (等额本金)
+  function calcEqualPrincipal(p, r, n) {
+    if (p <= 0 || n <= 0) return { pmt: 0, totalInterest: 0, firstPmt: 0, lastPmt: 0 };
+    const principalPerMonth = p / n;
+    const firstInterest = p * r;
+    const firstPmt = principalPerMonth + firstInterest;
+    const lastPmt = principalPerMonth + principalPerMonth * r;
+    const totalInterest = (n + 1) * p * r / 2;
+    return { pmt: firstPmt, totalInterest, firstPmt, lastPmt, principalPerMonth };
+  }
+
+  function recalculate() {
+    const balBiz = parseFloat(bizBalanceInput.value) || 0;
+    const balFund = parseFloat(fundBalanceInput.value) || 0;
+    const nBiz = parseInt(bizRemainMonthsInput.value) || 1;
+    const nFund = parseInt(fundRemainMonthsInput.value) || 1;
+    const rBiz = (parseFloat(bizRateInput.value) || 0) / 100 / 12;
+    const rFund = (parseFloat(fundRateInput.value) || 0) / 100 / 12;
+    const fundMonthlyDeposit = parseFloat(fundMonthlyPayInput.value) || 0;
+    let prepay = parseFloat(prepayAmountInput.value) || 0;
+
+    prepayRangeInput.max = currentTarget === 'biz' ? balBiz : balFund;
+    document.getElementById('prepayAmountText').innerText = `${new Intl.NumberFormat('zh-CN').format(prepay)} 元 (${fmtWan(prepay)}万)`;
+
+    const isEqualInterest = currentRepayType === 'equal_interest';
+
+    // Baseline calculation
+    let baseBiz = isEqualInterest ? calcEqualInterest(balBiz, rBiz, nBiz) : calcEqualPrincipal(balBiz, rBiz, nBiz);
+    let baseFund = isEqualInterest ? calcEqualInterest(balFund, rFund, nFund) : calcEqualPrincipal(balFund, rFund, nFund);
+
+    document.getElementById('bizDisplayPmt').value = fmt(baseBiz.pmt);
+    document.getElementById('fundDisplayPmt').value = fmt(baseFund.pmt);
+
+    const baseTotalPmt = baseBiz.pmt + baseFund.pmt;
+    const baseTotalInterest = baseBiz.totalInterest + baseFund.totalInterest;
+
+    // Prepayment Allocation
+    let newBalBiz = balBiz;
+    let newBalFund = balFund;
+    if (currentTarget === 'biz') {
+      const actualPrepay = Math.min(prepay, balBiz);
+      newBalBiz = balBiz - actualPrepay;
+    } else {
+      const actualPrepay = Math.min(prepay, balFund);
+      newBalFund = balFund - actualPrepay;
+    }
+
+    // --- Scenario A: Reduce Term (缩短年限) ---
+    let newTermBiz = nBiz;
+    let newTermFund = nFund;
+    let termBizRes = baseBiz;
+    let termFundRes = baseFund;
+
+    if (isEqualInterest) {
+      if (currentTarget === 'biz' && newBalBiz > 0) {
+        const pmtTarget = baseBiz.pmt;
+        if (pmtTarget > newBalBiz * rBiz) {
+          newTermBiz = Math.ceil(Math.log(pmtTarget / (pmtTarget - newBalBiz * rBiz)) / Math.log(1 + rBiz));
+          termBizRes = calcEqualInterest(newBalBiz, rBiz, newTermBiz);
+        }
+      } else if (currentTarget === 'fund' && newBalFund > 0) {
+        const pmtTarget = baseFund.pmt;
+        if (pmtTarget > newBalFund * rFund) {
+          newTermFund = Math.ceil(Math.log(pmtTarget / (pmtTarget - newBalFund * rFund)) / Math.log(1 + rFund));
+          termFundRes = calcEqualInterest(newBalFund, rFund, newTermFund);
+        }
+      }
+    } else {
+      // Equal principal term reduction
+      if (currentTarget === 'biz' && newBalBiz > 0) {
+        newTermBiz = Math.ceil(newBalBiz / baseBiz.principalPerMonth);
+        termBizRes = calcEqualPrincipal(newBalBiz, rBiz, newTermBiz);
+      } else if (currentTarget === 'fund' && newBalFund > 0) {
+        newTermFund = Math.ceil(newBalFund / baseFund.principalPerMonth);
+        termFundRes = calcEqualPrincipal(newBalFund, rFund, newTermFund);
+      }
+    }
+
+    const termTotalInterest = (currentTarget === 'biz' ? termBizRes.totalInterest + baseFund.totalInterest : baseBiz.totalInterest + termFundRes.totalInterest);
+    const termSavedInterest = Math.max(0, baseTotalInterest - termTotalInterest);
+    const termMonthsSaved = (currentTarget === 'biz' ? nBiz - newTermBiz : nFund - newTermFund);
+    const termYearsSaved = (termMonthsSaved / 12).toFixed(1);
+
+    // --- Scenario B: Reduce PMT (减少月供) ---
+    const pmtBizRes = isEqualInterest ? calcEqualInterest(newBalBiz, rBiz, nBiz) : calcEqualPrincipal(newBalBiz, rBiz, nBiz);
+    const pmtFundRes = isEqualInterest ? calcEqualInterest(newBalFund, rFund, nFund) : calcEqualPrincipal(newBalFund, rFund, nFund);
+    const pmtTotalInterest = pmtBizRes.totalInterest + pmtFundRes.totalInterest;
+    const pmtSavedInterest = Math.max(0, baseTotalInterest - pmtTotalInterest);
+    const pmtNewTotalPmt = pmtBizRes.pmt + pmtFundRes.pmt;
+    const pmtMonthlyReduction = baseTotalPmt - pmtNewTotalPmt;
+
+    // Active Selection
+    let activeSaved = 0;
+    let activeNewPmt = 0;
+    let activeSummary = "";
+
+    const activeTargetMonths = currentTarget === 'biz' ? nBiz : nFund;
+    const baseEndYear = 2026 + Math.floor((10 + activeTargetMonths) / 12);
+    const baseEndMonth = ((10 + activeTargetMonths) % 12) || 12;
+
+    if (currentMode === 'reduce_term') {
+      activeSaved = termSavedInterest;
+      activeNewPmt = (currentTarget === 'biz' ? termBizRes.pmt + baseFund.pmt : baseBiz.pmt + termFundRes.pmt);
+      const activeNewN = (currentTarget === 'biz' ? newTermBiz : newTermFund);
+      const newEndYear = 2026 + Math.floor((10 + activeNewN) / 12);
+      const newEndMonth = ((10 + activeNewN) % 12) || 12;
+      activeSummary = `${currentTarget === 'biz' ? '商业贷款' : '公积金贷款'}年限缩短 ${termYearsSaved} 年 (${termMonthsSaved} 个月)，提前至 ${newEndYear} 年 ${newEndMonth} 月彻底还清！`;
+      document.getElementById('cardOptA').classList.add('highlight');
+      document.getElementById('cardOptB').classList.remove('highlight');
+      document.getElementById('heroModeBadge').innerText = '方案A：缩短年限';
+    } else {
+      activeSaved = pmtSavedInterest;
+      activeNewPmt = pmtNewTotalPmt;
+      activeSummary = `还款期限保持不变 (商贷至2042年，公积金至2048年)，每月总月供直减 ¥ ${fmt(pmtMonthlyReduction)}`;
+      document.getElementById('cardOptB').classList.add('highlight');
+      document.getElementById('cardOptA').classList.remove('highlight');
+      document.getElementById('heroModeBadge').innerText = '方案B：减少月供';
+    }
+
+    const activeRealOut = Math.max(0, activeNewPmt - fundMonthlyDeposit);
+    const savingRate = baseTotalInterest > 0 ? ((activeSaved / baseTotalInterest) * 100).toFixed(1) : 0;
+
+    // Update Hero
+    document.getElementById('heroSavedInterest').innerText = `¥ ${fmt(activeSaved)}`;
+    document.getElementById('heroSummaryText').innerText = activeSummary;
+    document.getElementById('heroNewPmt').innerText = `¥ ${fmt(activeNewPmt)} /月`;
+    document.getElementById('heroRealOutPmt').innerText = `¥ ${fmt(activeRealOut)} /月`;
+    document.getElementById('heroSavingRate').innerText = `${savingRate}%`;
+
+    // Option A card
+    document.getElementById('valTermSaved').innerText = `省利息 ¥ ${fmtWan(termSavedInterest)} 万`;
+    document.getElementById('detailTerm').innerHTML = `
+      • 账面总月供：保持原样约 ¥ ${fmt(currentTarget === 'biz' ? termBizRes.pmt + baseFund.pmt : baseBiz.pmt + termFundRes.pmt)}/月<br>
+      • 提前结清：${currentTarget === 'biz'?'商贷':'公积金'}缩短 ${termMonthsSaved} 个月 (${termYearsSaved}年)<br>
+      • 结清节点：从 ${baseEndYear}年${baseEndMonth}月 提前至 <strong>${2026 + Math.floor((10 + (currentTarget==='biz'?newTermBiz:newTermFund))/12)}年${((10 + (currentTarget==='biz'?newTermBiz:newTermFund))%12)||12}月</strong>
+    `;
+
+    // Option B card
+    document.getElementById('valPmtSaved').innerText = `省利息 ¥ ${fmtWan(pmtSavedInterest)} 万`;
+    document.getElementById('detailPmt').innerHTML = `
+      • 账面总月供：从 ${fmt(baseTotalPmt)} 降至 <strong>${fmt(pmtNewTotalPmt)}</strong> 元/月<br>
+      • 每月直减：少掏现金 <strong>${fmt(pmtMonthlyReduction)}</strong> 元/月<br>
+      • 扣除公积金后实付：仅需 <strong>${fmt(Math.max(0, pmtNewTotalPmt - fundMonthlyDeposit))}</strong> 元/月
+    `;
+
+    const diff = termSavedInterest - pmtSavedInterest;
+    document.getElementById('interestDiffTag').innerText = diff >= 0
+      ? `方案A 比 方案B 多省 ${fmtWan(diff)} 万元利息`
+      : `方案B 比 方案A 多省 ${fmtWan(-diff)} 万元利息`;
+
+    // Table Update
+    document.getElementById('tdNewBizBal').innerText = `¥ ${fmt(newBalBiz)}`;
+    document.getElementById('tdPrepayCut').innerText = `- ¥ ${fmt(balBiz - newBalBiz)}`;
+    
+    const activeBizPmt = currentMode === 'reduce_term' ? termBizRes.pmt : pmtBizRes.pmt;
+    document.getElementById('tdNewBizPmt').innerText = `¥ ${fmt(activeBizPmt)}`;
+    document.getElementById('tdBizPmtDiff').innerText = (baseBiz.pmt - activeBizPmt > 0.1) 
+      ? `- ¥ ${fmt(baseBiz.pmt - activeBizPmt)} /月` 
+      : '保持不变';
+    
+    document.getElementById('tdNewTotalPmt').innerText = `¥ ${fmt(activeNewPmt)}`;
+    document.getElementById('tdTotalPmtDiff').innerText = (baseTotalPmt - activeNewPmt > 0.1) 
+      ? `- ¥ ${fmt(baseTotalPmt - activeNewPmt)} /月` 
+      : '保持不变';
+    
+    document.getElementById('tdNewRealOut').innerText = `¥ ${fmt(activeRealOut)}`;
+    document.getElementById('tdRealOutDiff').innerText = (Math.max(0, baseTotalPmt - fundMonthlyDeposit) - activeRealOut > 0.1) 
+      ? `- ¥ ${fmt(Math.max(0, baseTotalPmt - fundMonthlyDeposit) - activeRealOut)} /月` 
+      : '保持不变';
+  }
+
+  recalculate();
+</script>
+
+</body>
+</html>
